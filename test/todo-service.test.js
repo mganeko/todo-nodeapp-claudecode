@@ -1,5 +1,13 @@
 const TodoService = require('../todo-service');
-const { initializeTestDatabase, getTestDatabase, closeTestDatabase } = require('./test-database');
+const { 
+  initializeTestDatabase, 
+  getTestDatabase, 
+  closeTestDatabase,
+  clearAllTodos,
+  createTestTodo,
+  createMultipleTodos,
+  markAllTodosAsUncompleted
+} = require('./test-database');
 
 let todoService;
 
@@ -13,15 +21,8 @@ afterAll(async () => {
   await closeTestDatabase();
 });
 
-beforeEach((done) => {
-  const db = getTestDatabase();
-  db.run('DELETE FROM todos', [], (err) => {
-    if (err) {
-      done(err);
-    } else {
-      done();
-    }
-  });
+beforeEach(async () => {
+  await clearAllTodos();
 });
 
 describe('TodoService', () => {
@@ -32,18 +33,7 @@ describe('TodoService', () => {
     });
 
     test('作成されたTodoを返す', async () => {
-      const db = getTestDatabase();
-      
-      await new Promise((resolve, reject) => {
-        db.run(
-          'INSERT INTO todos (text, completed) VALUES (?, ?)',
-          ['Test todo', false],
-          function(err) {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
+      await createTestTodo('Test todo', false);
 
       const todos = await todoService.getAllTodos();
       expect(todos).toHaveLength(1);
@@ -56,18 +46,7 @@ describe('TodoService', () => {
 
   describe('getTodoById', () => {
     test('存在するTodoを返す', async () => {
-      const db = getTestDatabase();
-      
-      const todoId = await new Promise((resolve, reject) => {
-        db.run(
-          'INSERT INTO todos (text, completed) VALUES (?, ?)',
-          ['Test todo', false],
-          function(err) {
-            if (err) reject(err);
-            else resolve(this.lastID);
-          }
-        );
-      });
+      const todoId = await createTestTodo('Test todo', false);
 
       const todo = await todoService.getTodoById(todoId);
       expect(todo).toMatchObject({
@@ -120,18 +99,7 @@ describe('TodoService', () => {
     let todoId;
 
     beforeEach(async () => {
-      const db = getTestDatabase();
-      
-      todoId = await new Promise((resolve, reject) => {
-        db.run(
-          'INSERT INTO todos (text, completed) VALUES (?, ?)',
-          ['Test todo', false],
-          function(err) {
-            if (err) reject(err);
-            else resolve(this.lastID);
-          }
-        );
-      });
+      todoId = await createTestTodo('Test todo', false);
     });
 
     test('テキストを更新', async () => {
@@ -202,18 +170,7 @@ describe('TodoService', () => {
     let todoId;
 
     beforeEach(async () => {
-      const db = getTestDatabase();
-      
-      todoId = await new Promise((resolve, reject) => {
-        db.run(
-          'INSERT INTO todos (text, completed) VALUES (?, ?)',
-          ['Test todo', false],
-          function(err) {
-            if (err) reject(err);
-            else resolve(this.lastID);
-          }
-        );
-      });
+      todoId = await createTestTodo('Test todo', false);
     });
 
     test('Todoを削除', async () => {
@@ -232,18 +189,11 @@ describe('TodoService', () => {
 
   describe('deleteCompletedTodos', () => {
     beforeEach(async () => {
-      const db = getTestDatabase();
-      
-      await new Promise((resolve, reject) => {
-        db.serialize(() => {
-          db.run('INSERT INTO todos (text, completed) VALUES (?, ?)', ['Todo 1', false]);
-          db.run('INSERT INTO todos (text, completed) VALUES (?, ?)', ['Todo 2', true]);
-          db.run('INSERT INTO todos (text, completed) VALUES (?, ?)', ['Todo 3', true], function(err) {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-      });
+      await createMultipleTodos([
+        { text: 'Todo 1', completed: false },
+        { text: 'Todo 2', completed: true },
+        { text: 'Todo 3', completed: true }
+      ]);
     });
 
     test('完了済みTodoを全て削除', async () => {
@@ -260,13 +210,7 @@ describe('TodoService', () => {
 
     test('完了済みTodoがない場合は0を返す', async () => {
       // 全て未完了にする
-      const db = getTestDatabase();
-      await new Promise((resolve, reject) => {
-        db.run('UPDATE todos SET completed = 0', [], function(err) {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await markAllTodosAsUncompleted();
 
       const deletedCount = await todoService.deleteCompletedTodos();
       expect(deletedCount).toBe(0);

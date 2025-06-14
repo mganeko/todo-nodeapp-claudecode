@@ -57,8 +57,92 @@ function closeTestDatabase() {
   });
 }
 
+// テストデータ操作用のヘルパー関数
+
+// 全てのTodoを削除
+function clearAllTodos() {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM todos', [], (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// 単一のTodoを作成
+function createTestTodo(text, completed = false) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'INSERT INTO todos (text, completed) VALUES (?, ?)',
+      [text, completed ? 1 : 0],
+      function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.lastID);
+        }
+      }
+    );
+  });
+}
+
+// 複数のTodoを作成（バッチ作成）
+function createMultipleTodos(todos) {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      const stmt = db.prepare('INSERT INTO todos (text, completed) VALUES (?, ?)');
+      
+      todos.forEach(todo => {
+        stmt.run([todo.text, todo.completed ? 1 : 0]);
+      });
+      
+      stmt.finalize((err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  });
+}
+
+// 全てのTodoをcompletedに設定
+function markAllTodosAsCompleted() {
+  return new Promise((resolve, reject) => {
+    db.run('UPDATE todos SET completed = 1', [], function(err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// 全てのTodoをuncompletedに設定
+function markAllTodosAsUncompleted() {
+  return new Promise((resolve, reject) => {
+    db.run('UPDATE todos SET completed = 0', [], function(err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 module.exports = {
   initializeTestDatabase,
   getTestDatabase,
-  closeTestDatabase
+  closeTestDatabase,
+  clearAllTodos,
+  createTestTodo,
+  createMultipleTodos,
+  markAllTodosAsCompleted,
+  markAllTodosAsUncompleted
 };
