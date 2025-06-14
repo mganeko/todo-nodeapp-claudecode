@@ -15,6 +15,7 @@ Node.js、Express、SQLite3を使用したシンプルなTodoアプリケーシ�
 - **Node.js**: サーバー環境
 - **Express**: Webアプリケーションフレームワーク
 - **SQLite3**: データベース（todo.dbファイル）
+- **TodoService**: データベース操作を抽象化したサービス層
 - **REST API**: 以下のエンドポイントを提供
   - `GET /api/todos` - 全タスク取得
   - `GET /api/todos/:id` - 単一タスク取得
@@ -32,7 +33,8 @@ Node.js、Express、SQLite3を使用したシンプルなTodoアプリケーシ�
 
 ```
 todo-nodeapp-claudecode/
-├── server.js           # Expressサーバー
+├── server.js           # Expressサーバー（REST APIハンドラー）
+├── todo-service.js     # TodoServiceクラス（ビジネスロジック層）
 ├── database.js         # SQLiteデータベース初期化
 ├── package.json        # Node.js依存関係設定
 ├── .gitignore         # Git除外設定
@@ -41,6 +43,10 @@ todo-nodeapp-claudecode/
 │   ├── index.html     # メインHTML
 │   ├── style.css      # スタイルシート
 │   └── script.js      # クライアントサイドJavaScript
+├── test/              # テストファイル
+│   ├── server.test.js       # REST API統合テスト
+│   ├── todo-service.test.js # TodoServiceユニットテスト
+│   └── test-database.js     # テスト用データベース設定
 └── README.md          # このファイル
 ```
 
@@ -67,7 +73,12 @@ todo-nodeapp-claudecode/
    npm run dev
    ```
 
-3. **アクセス**
+3. **テストの実行**
+   ```bash
+   npm test
+   ```
+
+4. **アクセス**
    ブラウザで http://localhost:3000 にアクセス
 
 ## データベース
@@ -85,6 +96,25 @@ todos (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 ```
+
+## テスト
+
+アプリケーションには包括的なテストスイートが含まれています：
+
+### テスト構成
+- **REST API統合テスト**: `test/server.test.js` (16テストケース)
+- **TodoServiceユニットテスト**: `test/todo-service.test.js` (22テストケース)
+- **テスト用データベース**: メモリ内SQLiteを使用し、本番データに影響なし
+
+### テスト実行
+```bash
+npm test
+```
+
+### アーキテクチャ
+- **3層アーキテクチャ**: REST API ↔ サービス層 ↔ データベース層
+- **関心の分離**: ハンドラー、ビジネスロジック、データアクセスを明確に分離
+- **テスタビリティ**: 各層を独立してテスト可能
 
 ## 開発について
 
