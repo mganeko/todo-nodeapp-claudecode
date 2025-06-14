@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { createApp } = require('./server');
+const { createApp } = require('../server');
 const { initializeTestDatabase, getTestDatabase, closeTestDatabase } = require('./test-database');
 
 let app;
